@@ -84,6 +84,10 @@ def save_filter_prices_csv(csv_list, filename):
     print("Saving {} lines to {}".format(len(csvContents), filename))
     csvContents.to_csv(filename, index=False, columns=["SiteId", "Fuel_Type", "Price", "TransactionDateutc"], encoding="cp1252")
 
+def setup_tables(db_cursor, filename):
+    sqlCommands = open(filename, "r").read()
+    db_cursor.execute(sqlCommands)
+
 
 
 
@@ -95,6 +99,8 @@ save_filter_prices_csv(csvUrls, "qldfuelprices.csv")
 
 db_conn = psycopg2.connect(host="localhost", port=5432, dbname="", user="postgres", password="")
 db_cursor = db_conn.cursor()
+
+setup_tables(db_cursor,"setuptables.sql")
 
 import_sites_csv(db_cursor, "qldfuelsites.csv")
 import_prices_csv(db_cursor, "qldfuelprices.csv")
