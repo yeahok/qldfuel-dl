@@ -1,6 +1,7 @@
 import requests
 import json
 import psycopg2
+import configparser
 from datetime import datetime
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -90,6 +91,8 @@ def setup_tables(db_cursor, filename):
 
 
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
 
 csvUrls = getlinks("https://www.data.qld.gov.au/dataset/fuel-price-reporting")
 downloadCsvList(csvUrls)
@@ -97,7 +100,11 @@ downloadCsvList(csvUrls)
 save_filter_sites_csv(csvUrls, "qldfuelsites.csv")
 save_filter_prices_csv(csvUrls, "qldfuelprices.csv")
 
-db_conn = psycopg2.connect(host="localhost", port=5432, dbname="", user="postgres", password="")
+db_conn = psycopg2.connect(host=config["postgres"]["host"], 
+                            port=config["postgres"]["port"], 
+                            dbname=config["postgres"]["dbname"], 
+                            user=config["postgres"]["user"],
+                            password=config["postgres"]["password"])
 db_cursor = db_conn.cursor()
 
 setup_tables(db_cursor,"setuptables.sql")
