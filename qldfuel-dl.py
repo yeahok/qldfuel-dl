@@ -2,6 +2,7 @@ import requests
 import json
 import psycopg2
 import configparser
+import shutil
 from datetime import datetime
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -59,6 +60,12 @@ def import_sites_csv(db_cursor, filename):
     next(file_contents)
     db_cursor.copy_from(file_contents, 'sites', sep=";")
 
+def save_merged_csv(csv_list, filename):
+    with open(filename,'wb') as outFile:
+        for csv in csv_list:
+            with open(csv["filename"],'rb') as csvread:
+                shutil.copyfileobj(csvread, outFile)
+
 def save_filter_sites_csv(csv_list, filename):
     columnNames = ["SiteId", "Site_Name", "Site_Brand", "Sites_Address_Line_1", "Site_Suburb", "Site_State",
                                          "Site_Post_Code", "Site_Latitude", "Site_Longitude", "Fuel_Type", "Price", "TransactionDateutc"]
@@ -96,6 +103,8 @@ config.read('settings.ini')
 
 csvUrls = getlinks("https://www.data.qld.gov.au/dataset/fuel-price-reporting")
 downloadCsvList(csvUrls)
+
+save_merged_csv(csvUrls, "qldfuelmergeall.csv")
 
 save_filter_sites_csv(csvUrls, "qldfuelsites.csv")
 save_filter_prices_csv(csvUrls, "qldfuelprices.csv")
