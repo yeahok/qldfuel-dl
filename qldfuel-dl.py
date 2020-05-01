@@ -61,10 +61,17 @@ def import_sites_csv(db_cursor, filename):
     db_cursor.copy_from(file_contents, 'sites', sep=";")
 
 def save_merged_csv(csv_list, filename):
+    first = True # for skipping subsequent csv headers
     with open(filename,'wb') as outFile:
         for csv in csv_list:
             with open(csv["filename"],'rb') as csvread:
-                shutil.copyfileobj(csvread, outFile)
+                if first:
+                    first = False
+                else:
+                    next(csvread)
+
+                for line in csvread:
+                    outFile.write(line)
 
 def save_filter_sites_csv(csv_list, filename):
     columnNames = ["SiteId", "Site_Name", "Site_Brand", "Sites_Address_Line_1", "Site_Suburb", "Site_State",
