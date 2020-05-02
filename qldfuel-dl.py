@@ -53,12 +53,12 @@ def download(url, file_name):
 def import_prices_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
     next(file_contents)
-    db_cursor.copy_from(file_contents, 'prices', columns=("\"SiteId\"", "\"Fuel_Type\"", "\"Price\"", "\"TransactionDateutc\""), sep=",")
+    db_cursor.copy_from(file_contents, 'public.prices', columns=("\"SiteId\"", "\"Fuel_Type\"", "\"Price\"", "\"TransactionDateutc\""), sep=",")
 
 def import_sites_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
     next(file_contents)
-    db_cursor.copy_from(file_contents, 'sites', sep=";")
+    db_cursor.copy_from(file_contents, 'public.sites', sep=";")
 
 def save_merged_csv(csv_list, filename):
     first = True # for skipping subsequent csv headers
@@ -121,6 +121,7 @@ db_conn = psycopg2.connect(host=config["postgres"]["host"],
                             dbname=config["postgres"]["dbname"], 
                             user=config["postgres"]["user"],
                             password=config["postgres"]["password"])
+db_conn.autocommit = True
 db_cursor = db_conn.cursor()
 
 setup_tables(db_cursor,"setuptables.sql")
@@ -129,6 +130,5 @@ import_sites_csv(db_cursor, "qldfuelsites.csv")
 import_prices_csv(db_cursor, "qldfuelprices.csv")
 
 db_cursor.close()
-db_conn.commit()
 db_conn.close()
 print("Import done")
