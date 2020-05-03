@@ -61,14 +61,14 @@ def import_sites_csv(db_cursor, filename):
     db_cursor.copy_from(file_contents, 'public.sites', sep=";")
 
 def save_merged_csv(csv_list, filename):
-    first = True # for skipping subsequent csv headers
+    customHeaders = ["Id","Name","Brand","Address","Suburb","State","PostCode","Lat", "Long",
+                     "FuelType", "Price", "DateTime"]
     with open(filename,'wb') as outFile:
+        outFile.write(",".join(customHeaders).encode())
+        outFile.write("\n".encode())
         for csv in csv_list:
             with open(csv["filename"],'rb') as csvread:
-                if first:
-                    first = False
-                else:
-                    next(csvread)
+                next(csvread)
 
                 for line in csvread:
                     outFile.write(line)
