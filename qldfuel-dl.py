@@ -61,8 +61,8 @@ def import_sites_csv(db_cursor, filename):
     db_cursor.copy_from(file_contents, 'public.sites', sep=";")
 
 def save_merged_csv(csv_list, filename):
-    customHeaders = ["Id","Name","Brand","Address","Suburb","State","PostCode","Lat", "Long",
-                     "FuelType", "Price", "DateTime"]
+    customHeaders = ["id","name","brand","address","suburb","state","postcode","lat", "long",
+                     "fueltype", "price", "datetime"]
     with open(filename,'wb') as outFile:
         outFile.write(",".join(customHeaders).encode())
         outFile.write("\n".encode())
