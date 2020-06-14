@@ -12,7 +12,7 @@ def getlinks(page_url):
     soup = BeautifulSoup(colpage.text, 'html.parser')
 
     test = soup.find('script', {"type":"application/ld+json"})
-    fulljson = json.loads(test.get_text())
+    fulljson = json.loads(test.string)
 
     linksList = parse_json(fulljson)
 
