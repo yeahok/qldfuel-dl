@@ -78,7 +78,7 @@ def save_filter_sites_csv(csv_list, filename):
                                          "Site_Post_Code", "Site_Latitude", "Site_Longitude", "Fuel_Type", "Price", "TransactionDateutc"]
     csvContents = pd.DataFrame(columns = columnNames)
     for i in range(0, len(csv_list)):
-        csvLoopContents = pd.read_csv(csv_list[i]["filename"], engine="python", names=columnNames, header= 0)
+        csvLoopContents = pd.read_csv(csv_list[i]["filename"], engine="python", names=columnNames, skiprows=1, header= 0)
         csvContents = pd.concat([csvLoopContents, csvContents], axis=0)
         csvContents = csvContents.drop_duplicates(subset=["SiteId"])
         print("Loading: {}".format(csv_list[i]["filename"]))
@@ -92,7 +92,7 @@ def save_filter_prices_csv(csv_list, filename):
                                          "Site_Post_Code", "Site_Latitude", "Site_Longitude", "Fuel_Type", "Price", "TransactionDateutc"]
     csvContents = pd.DataFrame(columns = columnNames)
     for i in range(0, len(csv_list)):
-        csvLoopContents = pd.read_csv(csv_list[i]["filename"], engine="python", names=columnNames, header= 0)
+        csvLoopContents = pd.read_csv(csv_list[i]["filename"], engine="python", names=columnNames, skiprows=1, header= 0)
         csvContents = pd.concat([csvLoopContents, csvContents], axis=0)
         print("Loading: {}".format(csv_list[i]["filename"]))
     
