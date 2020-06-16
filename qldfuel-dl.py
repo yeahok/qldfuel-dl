@@ -123,6 +123,7 @@ db_conn = psycopg2.connect(host=config["postgres"]["host"],
                             password=config["postgres"]["password"])
 db_conn.autocommit = True
 db_cursor = db_conn.cursor()
+db_cursor.execute("SET datestyle = dmy;")
 
 setup_tables(db_cursor,"setuptables.sql")
 
