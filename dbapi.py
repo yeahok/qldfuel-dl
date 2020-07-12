@@ -58,13 +58,13 @@ def generate_site_fuel(db_conn, sites):
             (site["S"],))
         fuel_ids = db_cursor1.fetchall()
         for fuel_id in fuel_ids:
-            db_cursor2.execute("INSERT INTO site_fuel (site_id, fuel_id) VALUES (%s, %s)",
+            db_cursor2.execute("INSERT INTO site_fuel (site_id, fuel_id, active) VALUES (%s, %s, TRUE)",
                 (site["S"], fuel_id))
 
 def import_prices_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
     next(file_contents)
-    db_cursor.copy_from(file_contents, 'public.price', columns=("\"site_id\"", "\"fuel_id\"", "\"collection_method\"", "\"amount\"", "\"transaction_date\""), sep=",")
+    db_cursor.copy_from(file_contents, 'public.price', columns=("\"site_id\"", "\"fuel_id\"", "\"collection_method\"", "\"amount\"", "\"transaction_date\"", "\"active\""), sep=",")
 
 def import_sites_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
