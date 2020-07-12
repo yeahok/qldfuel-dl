@@ -78,6 +78,7 @@ CREATE TABLE public.site_fuel
 	id serial,
 	site_id integer,
 	fuel_id integer,
+    active boolean,
 	UNIQUE (site_id, fuel_id),
 	PRIMARY KEY (id),
 	FOREIGN KEY (site_id)
@@ -95,6 +96,7 @@ CREATE TABLE public.price
     collection_method character varying,
     amount integer,
     transaction_date timestamp with time zone,
+    active boolean,
 	UNIQUE (site_id, fuel_id, transaction_date),
     PRIMARY KEY (id),
     FOREIGN KEY (site_id)

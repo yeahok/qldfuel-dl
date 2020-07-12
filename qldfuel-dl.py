@@ -72,13 +72,14 @@ def save_filter_prices_csv(csv_list, filename, api_conn):
     csvContents["Fuel_Type"].replace(fuel_mapping, inplace=True)
 
     csvContents["Collection_Method"] = "CSV"
+    csvContents["Active"] = 1
 
     #drop rows that will violate the unique constraint in the table
     #assume the last duplicate row is the more 'correct' one
     csvContents.drop_duplicates(subset=["SiteId", "Fuel_Type", "TransactionDateutc"] , keep='last', inplace=True)
     
     print("Saving {} lines to {}".format(len(csvContents), filename))
-    csvContents.to_csv(filename, index=False, columns=["SiteId", "Fuel_Type", "Collection_Method", "Price", "TransactionDateutc"], encoding="cp1252")
+    csvContents.to_csv(filename, index=False, columns=["SiteId", "Fuel_Type", "Collection_Method", "Price", "TransactionDateutc", "Active"], encoding="cp1252")
 
 def get_fuel_mapping(api_conn):
     fuels = api_conn.get_fuels()
