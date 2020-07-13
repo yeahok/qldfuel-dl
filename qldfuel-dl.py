@@ -141,6 +141,9 @@ dbapi.import_prices_csv(db_cursor, "qldfuelprices.csv")
 
 dbapi.generate_site_fuel(db_conn, sites)
 
+prices = api_conn.get_prices()
+dbapi.import_prices_api(db_cursor, prices, 20)
+
 db_cursor.close()
 db_conn.close()
 print("Import done")

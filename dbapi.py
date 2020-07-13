@@ -1,4 +1,6 @@
 import psycopg2
+from datetime import datetime
+from datetime import timedelta
 
 def import_regions(db_cursor, regions):
     #region list is reversed to prevent same table foreign key error
@@ -60,6 +62,41 @@ def generate_site_fuel(db_conn, sites):
         for fuel_id in fuel_ids:
             db_cursor2.execute("INSERT INTO site_fuel (site_id, fuel_id, active) VALUES (%s, %s, TRUE)",
                 (site["S"], fuel_id))
+
+def import_prices_api(db_cursor, prices, limit_minutes):
+    db_cursor.execute("SET timezone = 'utc';")
+    db_cursor.execute("SET datestyle = dmy;")
+
+    interval = timedelta(minutes=limit_minutes)
+
+    new_prices_counter = 0
+    unavailable_fuels_counter = 0
+    for price in prices:
+        price_time = datetime.strptime(price["TransactionDateUtc"][:19], "%Y-%m-%dT%H:%M:%S")
+        if(datetime.utcnow() - price_time < interval):
+            new_prices_counter += 1
+            if price["Price"] == 9999:
+                #9999 is apparently used to denote the fuel is unavailable
+                #Will not be added to the 'price' table for now
+                unavailable_fuels_counter += 1
+                db_cursor.execute("UPDATE site_fuel SET active = False WHERE site_id = %s AND fuel_id = %s",
+                    (price["SiteId"], price["FuelId"]))
+            else:
+                active = "True"
+                if price["Price"] > 9999:
+                    #assume prices above 9999 are not correct
+                    active = "False"
+                db_cursor.execute("""INSERT INTO price (site_id, fuel_id, collection_method, amount, transaction_date, active) VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING""",
+                (price["SiteId"], price["FuelId"], price["CollectionMethod"], price["Price"], price["TransactionDateUtc"], active))
+
+                #assume fuel is active again if there's a new price
+                db_cursor.execute("UPDATE site_fuel SET active = True WHERE site_id = %s AND fuel_id = %s",
+                    (price["SiteId"], price["FuelId"]))
+
+    
+    print("Prices inserted from api: {}".format(new_prices_counter))
+    print("Unavailable fuels: {}".format(unavailable_fuels_counter))
 
 def import_prices_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
