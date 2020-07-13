@@ -19,20 +19,25 @@ def import_regions(db_cursor, regions):
 
 def import_brands(db_cursor, brands):
     for brand in brands:
-        db_cursor.execute("INSERT INTO brand (id, name, active) VALUES (%s, %s, TRUE)",
-            (brand["BrandId"], brand["Name"]))
+        db_cursor.execute("""INSERT INTO brand (id, name, active) VALUES (%s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s""",
+            (brand["BrandId"], brand["Name"], brand["Name"]))
 
 def import_fuels(db_cursor, fuels):
     for fuel in fuels:
-        db_cursor.execute("INSERT INTO fuel (id, name, active) VALUES (%s, %s, TRUE)",
-            (fuel["FuelId"], fuel["Name"]))
+        db_cursor.execute("""INSERT INTO fuel (id, name, active) VALUES (%s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s""",
+            (fuel["FuelId"], fuel["Name"], fuel["Name"]))
 
 def import_sites(db_cursor, sites):
     db_cursor.execute("SET timezone = 'utc';")
     db_cursor.execute("SET datestyle = dmy;")
     for site in sites:
-        db_cursor.execute("INSERT INTO site (id, name, brand_id, address, post_code, latitude, longitude, modified_date, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)",
-            (site["S"], site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"]))
+        db_cursor.execute("""INSERT INTO site (id, name, brand_id, address, post_code, latitude, longitude, modified_date, active) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s, brand_id = %s, address = %s, post_code = %s, latitude = %s, longitude = %s, modified_date = %s""",
+            (site["S"], site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"],
+            site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"]))
 
 def generate_site_region(db_cursor, sites):
     region_fields = ["G1", "G2", "G3", "G4", "G5"]
