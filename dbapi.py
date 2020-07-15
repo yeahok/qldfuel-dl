@@ -15,8 +15,13 @@ def import_regions(db_cursor, regions):
             
             region["GeoRegionParentId"] = query_return[0]
 
-        db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbreviation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
-            (region["Name"], region["GeoRegionId"], region["GeoRegionLevel"], region["Abbrev"], region["GeoRegionParentId"]))
+        db_cursor.execute("UPDATE region SET name = %s, abbreviation = %s WHERE original_id = %s AND geographical_level = %s", 
+            (region["Name"], region["Abbrev"], region["GeoRegionId"], region["GeoRegionLevel"]))
+        
+        if db_cursor.rowcount == 0:
+            #if nothing was updated in the previous query insert instead
+            db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbreviation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
+                (region["Name"], region["GeoRegionId"], region["GeoRegionLevel"], region["Abbrev"], region["GeoRegionParentId"]))
 
 def import_brands(db_cursor, brands):
     for brand in brands:
