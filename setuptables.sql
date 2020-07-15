@@ -4,7 +4,7 @@ CREATE TABLE public.region
     name character varying,
     original_id integer,
     geographical_level integer,
-    abbrevation character varying,
+    abbreviation character varying,
     region_parent_id integer,
 	active boolean,
     PRIMARY KEY (id),

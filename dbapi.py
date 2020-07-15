@@ -15,7 +15,7 @@ def import_regions(db_cursor, regions):
             
             region["GeoRegionParentId"] = query_return[0]
 
-        db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbrevation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
+        db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbreviation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
             (region["Name"], region["GeoRegionId"], region["GeoRegionLevel"], region["Abbrev"], region["GeoRegionParentId"]))
 
 def import_brands(db_cursor, brands):
