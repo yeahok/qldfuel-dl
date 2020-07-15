@@ -99,7 +99,7 @@ def import_prices_api(db_cursor, prices):
                 (price["SiteId"], price["FuelId"]))
             row = db_cursor.fetchone()
 
-            if row[2] != parse_datetime(price["TransactionDateUtc"]) and row[1] != price["Price"]:
+            if db_cursor.rowcount == 0 or (row[2] != parse_datetime(price["TransactionDateUtc"]) and row[1] != price["Price"]):
                 if price["Price"] > 9999:
                     #assume prices above 9999 are not correct
                     active = "False"
