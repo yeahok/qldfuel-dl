@@ -7,6 +7,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 import pandas as pd
 import os.path
+import sys
 
 import fuelscrape
 import fuelapi
@@ -101,17 +102,55 @@ def get_site_id_list(api_conn):
     
     return list(map(get_id, sites))
 
+def init():
+    csvUrls = fuelscrape.getlinks("https://www.data.qld.gov.au/dataset/fuel-price-reporting")
+    downloadCsvList(csvUrls)
+    save_filter_prices_csv(csvUrls, "qldfuelprices.csv", api_conn)
 
+    dbapi.setup_tables(db_cursor, "setuptables.sql")
+
+    regions = api_conn.get_regions()
+    dbapi.import_regions(db_cursor, regions)
+
+    brands = api_conn.get_brands()
+    dbapi.import_brands(db_cursor, brands)
+
+    fuels = api_conn.get_fuels()
+    dbapi.import_fuels(db_cursor, fuels)
+
+    sites = api_conn.get_sites()
+    dbapi.import_sites(db_cursor, sites)
+
+    dbapi.generate_site_region(db_cursor, sites)
+
+    dbapi.import_prices_csv(db_cursor, "qldfuelprices.csv")
+
+    dbapi.generate_site_fuel(db_conn, sites)
+
+    prices = api_conn.get_prices()
+    dbapi.import_prices_api(db_cursor, prices)
+
+def update():
+    regions = api_conn.get_regions()
+    dbapi.import_regions(db_cursor, regions)
+
+    brands = api_conn.get_brands()
+    dbapi.import_brands(db_cursor, brands)
+
+    fuels = api_conn.get_fuels()
+    dbapi.import_fuels(db_cursor, fuels)
+
+    sites = api_conn.get_sites()
+    dbapi.import_sites(db_cursor, sites)
+
+def price_only():
+    prices = api_conn.get_prices()
+    dbapi.import_prices_api(db_cursor, prices)
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
 
 api_conn = fuelapi.Connection(config["api"]["key"])
-
-csvUrls = fuelscrape.getlinks("https://www.data.qld.gov.au/dataset/fuel-price-reporting")
-downloadCsvList(csvUrls)
-
-save_filter_prices_csv(csvUrls, "qldfuelprices.csv", api_conn)
 
 db_conn = psycopg2.connect(host=config["postgres"]["host"], 
                             port=config["postgres"]["port"], 
@@ -121,28 +160,17 @@ db_conn = psycopg2.connect(host=config["postgres"]["host"],
 db_conn.autocommit = True
 db_cursor = db_conn.cursor()
 
-dbapi.setup_tables(db_cursor, "setuptables.sql")
+run = sys.argv[1]
 
-regions = api_conn.get_regions()
-dbapi.import_regions(db_cursor, regions)
-
-brands = api_conn.get_brands()
-dbapi.import_brands(db_cursor, brands)
-
-fuels = api_conn.get_fuels()
-dbapi.import_fuels(db_cursor, fuels)
-
-sites = api_conn.get_sites()
-dbapi.import_sites(db_cursor, sites)
-
-dbapi.generate_site_region(db_cursor, sites)
-
-dbapi.import_prices_csv(db_cursor, "qldfuelprices.csv")
-
-dbapi.generate_site_fuel(db_conn, sites)
-
-prices = api_conn.get_prices()
-dbapi.import_prices_api(db_cursor, prices)
+if run == "init":
+    init()
+elif run == "update":
+    update()
+elif run == "price":
+    price_only()
+else:
+    print("wrong argument")
+    sys.exit()
 
 db_cursor.close()
 db_conn.close()
