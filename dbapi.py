@@ -1,4 +1,7 @@
 import psycopg2
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 
 def import_regions(db_cursor, regions):
     #region list is reversed to prevent same table foreign key error
@@ -12,25 +15,35 @@ def import_regions(db_cursor, regions):
             
             region["GeoRegionParentId"] = query_return[0]
 
-        db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbrevation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
-            (region["Name"], region["GeoRegionId"], region["GeoRegionLevel"], region["Abbrev"], region["GeoRegionParentId"]))
+        db_cursor.execute("UPDATE region SET name = %s, abbreviation = %s WHERE original_id = %s AND geographical_level = %s", 
+            (region["Name"], region["Abbrev"], region["GeoRegionId"], region["GeoRegionLevel"]))
+        
+        if db_cursor.rowcount == 0:
+            #if nothing was updated in the previous query insert instead
+            db_cursor.execute("INSERT INTO region (name, original_id, geographical_level, abbreviation, region_parent_id, active) VALUES (%s, %s, %s, %s, %s, TRUE)",
+                (region["Name"], region["GeoRegionId"], region["GeoRegionLevel"], region["Abbrev"], region["GeoRegionParentId"]))
 
 def import_brands(db_cursor, brands):
     for brand in brands:
-        db_cursor.execute("INSERT INTO brand (id, name, active) VALUES (%s, %s, TRUE)",
-            (brand["BrandId"], brand["Name"]))
+        db_cursor.execute("""INSERT INTO brand (id, name, active) VALUES (%s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s""",
+            (brand["BrandId"], brand["Name"], brand["Name"]))
 
 def import_fuels(db_cursor, fuels):
     for fuel in fuels:
-        db_cursor.execute("INSERT INTO fuel (id, name, active) VALUES (%s, %s, TRUE)",
-            (fuel["FuelId"], fuel["Name"]))
+        db_cursor.execute("""INSERT INTO fuel (id, name, active) VALUES (%s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s""",
+            (fuel["FuelId"], fuel["Name"], fuel["Name"]))
 
 def import_sites(db_cursor, sites):
     db_cursor.execute("SET timezone = 'utc';")
     db_cursor.execute("SET datestyle = dmy;")
     for site in sites:
-        db_cursor.execute("INSERT INTO site (id, name, brand_id, address, post_code, latitude, longitude, modified_date, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)",
-            (site["S"], site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"]))
+        db_cursor.execute("""INSERT INTO site (id, name, brand_id, address, post_code, latitude, longitude, modified_date, active) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+            ON CONFLICT(id) DO UPDATE SET name = %s, brand_id = %s, address = %s, post_code = %s, latitude = %s, longitude = %s, modified_date = %s""",
+            (site["S"], site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"],
+            site["N"], site["B"], site["A"], site["P"], site["Lat"], site["Lng"], site["M"]))
 
 def generate_site_region(db_cursor, sites):
     region_fields = ["G1", "G2", "G3", "G4", "G5"]
@@ -60,6 +73,54 @@ def generate_site_fuel(db_conn, sites):
         for fuel_id in fuel_ids:
             db_cursor2.execute("INSERT INTO site_fuel (site_id, fuel_id, active) VALUES (%s, %s, TRUE)",
                 (site["S"], fuel_id))
+
+def parse_datetime(datetime_string):
+    #need to make strings the same format before parsing
+    if len(datetime_string) == 19:
+        datetime_string = "".join((datetime_string, "."))
+    datetime_string = datetime_string.ljust(26, '0')
+
+    parsed_date = datetime.strptime(datetime_string, "%Y-%m-%dT%H:%M:%S.%f")
+    parsed_date = parsed_date.replace(tzinfo= timezone.utc)
+    return parsed_date
+
+def import_prices_api(db_cursor, prices):
+    db_cursor.execute("SET timezone = 'utc';")
+    db_cursor.execute("SET datestyle = dmy;")
+
+    new_prices_counter = 0
+    unavailable_fuels_counter = 0
+
+    for price in prices:
+        if price["Price"] == 9999:
+            #9999 is apparently used to denote the fuel is unavailable
+            #Will not be added to the 'price' table for now
+            db_cursor.execute("UPDATE site_fuel SET active = False WHERE site_id = %s AND fuel_id = %s",
+                (price["SiteId"], price["FuelId"]))
+            unavailable_fuels_counter += 1
+        else:
+            #grab last row of matching site_id and fuel_id for comparison
+            db_cursor.execute("SELECT id, amount, transaction_date FROM price WHERE site_id = %s AND fuel_id = %s ORDER BY transaction_date DESC LIMIT 1",
+                (price["SiteId"], price["FuelId"]))
+            row = db_cursor.fetchone()
+
+            if db_cursor.rowcount == 0 or (row[2] != parse_datetime(price["TransactionDateUtc"]) and row[1] != price["Price"]):
+                if price["Price"] > 9999:
+                    #assume prices above 9999 are not correct
+                    active = "False"
+                else:
+                    active = "True"
+                db_cursor.execute("""INSERT INTO price (site_id, fuel_id, collection_method, amount, transaction_date, active) VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING""",
+                    (price["SiteId"], price["FuelId"], price["CollectionMethod"], price["Price"], price["TransactionDateUtc"], active))
+                new_prices_counter += 1
+            
+            #assume fuel is active again if the price isn't 9999
+            db_cursor.execute("UPDATE site_fuel SET active = True WHERE site_id = %s AND fuel_id = %s",
+                (price["SiteId"], price["FuelId"]))
+
+    print("Prices inserted from api: {}".format(new_prices_counter))
+    print("Unavailable fuels: {}".format(unavailable_fuels_counter))
 
 def import_prices_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
