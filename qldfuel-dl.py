@@ -143,6 +143,8 @@ def update():
     sites = api_conn.get_sites()
     dbapi.import_sites(db_cursor, sites)
 
+    dbapi.set_brand_active(db_cursor)
+
 def price_only():
     prices = api_conn.get_prices()
     dbapi.import_prices_api(db_cursor, prices)

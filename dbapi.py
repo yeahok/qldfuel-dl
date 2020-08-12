@@ -122,6 +122,21 @@ def import_prices_api(db_cursor, prices):
     print("Prices inserted from api: {}".format(new_prices_counter))
     print("Unavailable fuels: {}".format(unavailable_fuels_counter))
 
+def set_brand_active(db_cursor):
+    db_cursor.execute("SELECT distinct brand_id FROM public.site WHERE active = true")
+    active_brands = db_cursor.fetchall()
+
+    db_cursor.execute("SELECT id FROM public.brand")
+    brands = db_cursor.fetchall()
+
+    for id in brands:
+        if id in active_brands:
+            db_cursor.execute("UPDATE brand SET active = True WHERE id = %s",
+                (id))
+        else:
+            db_cursor.execute("UPDATE brand SET active = False WHERE id = %s",
+                (id))
+
 def import_prices_csv(db_cursor, filename):
     file_contents = open(filename, 'r')
     next(file_contents)
