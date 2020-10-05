@@ -107,47 +107,47 @@ def init():
     downloadCsvList(csvUrls)
     save_filter_prices_csv(csvUrls, "qldfuelprices.csv", api_conn)
 
-    dbapi.setup_tables(db_cursor, "setuptables.sql")
+    dbapi.setup_tables(db_conn, "setuptables.sql")
 
     regions = api_conn.get_regions()
-    dbapi.import_regions(db_cursor, regions)
+    dbapi.import_regions(db_conn, regions)
 
     brands = api_conn.get_brands()
-    dbapi.import_brands(db_cursor, brands)
+    dbapi.import_brands(db_conn, brands)
 
     fuels = api_conn.get_fuels()
-    dbapi.import_fuels(db_cursor, fuels)
+    dbapi.import_fuels(db_conn, fuels)
 
     sites = api_conn.get_sites()
-    dbapi.import_sites(db_cursor, sites)
+    dbapi.import_sites(db_conn, sites)
 
-    dbapi.generate_site_region(db_cursor, sites)
+    dbapi.generate_site_region(db_conn, sites)
 
-    dbapi.import_prices_csv(db_cursor, "qldfuelprices.csv")
+    dbapi.import_prices_csv(db_conn, "qldfuelprices.csv")
 
     dbapi.generate_site_fuel(db_conn, sites)
 
     prices = api_conn.get_prices()
-    dbapi.import_prices_api(db_cursor, prices)
+    dbapi.import_prices_api(db_conn, prices)
 
 def update():
     regions = api_conn.get_regions()
-    dbapi.import_regions(db_cursor, regions)
+    dbapi.import_regions(db_conn, regions)
 
     brands = api_conn.get_brands()
-    dbapi.import_brands(db_cursor, brands)
+    dbapi.import_brands(db_conn, brands)
 
     fuels = api_conn.get_fuels()
-    dbapi.import_fuels(db_cursor, fuels)
+    dbapi.import_fuels(db_conn, fuels)
 
     sites = api_conn.get_sites()
-    dbapi.import_sites(db_cursor, sites)
+    dbapi.import_sites(db_conn, sites)
 
-    dbapi.set_brand_active(db_cursor)
+    dbapi.set_brand_active(db_conn)
 
 def price_only():
     prices = api_conn.get_prices()
-    dbapi.import_prices_api(db_cursor, prices)
+    dbapi.import_prices_api(db_conn, prices)
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -160,7 +160,6 @@ db_conn = psycopg2.connect(host=config["postgres"]["host"],
                             user=config["postgres"]["user"],
                             password=config["postgres"]["password"])
 db_conn.autocommit = True
-db_cursor = db_conn.cursor()
 
 run = sys.argv[1]
 
@@ -174,6 +173,5 @@ else:
     print("wrong argument")
     sys.exit()
 
-db_cursor.close()
 db_conn.close()
 print("Import done")
